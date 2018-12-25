@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>H5</title>
+    </head>
+    <body style="background-color:black">
+    
+        <canvas  id="canvas" style="border:1px white solid" ></canvas>
+    </body>
+
+    <script>
+        var canvas= document.getElementById('canvas');
+        var width=document.documentElement.clientWidth-10 ;
+        var height=document.documentElement.clientHeight -30;
+        // var width=500 ;
+        // var height=500;
+        canvas.width =width;
+        canvas.height = height;
+        /***************全屏↑***********逻辑↓******************/
+        var ctx = canvas.getContext("2d");
+        var totalNodeNum = 100; //总共个数
+        var totalCircle=[];
+    
+        for(var i =0;i<totalNodeNum;i++){            
+                    var circle={};
+                    circle.color=getRandomColor();
+                    circle.radius=getRandomNumber(50,100);
+                    circle.x = getRandomPoint(width,circle.radius);
+                    circle.y = getRandomPoint(height,circle.radius);
+                    circle.VerSpeed=getRandomNumber(1,5); //垂直速度
+                    circle.Horspeed = getRandomNumber(1,5);//水平速度
+                    circle.draw=function(){
+                        var grd = ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,this.radius);
+                        grd.addColorStop(0,this.color);
+                        grd.addColorStop(1,'transparent');
+                        ctx.beginPath();            
+                        ctx.arc(this.x,this.y,this.radius,0,2*Math.PI);
+                        ctx.closePath();
+                        ctx.fillStyle = grd;
+                        ctx.fill();
+                        
+                        this.x =this.x+this.Horspeed;      
+                        this.y =this.y+this.VerSpeed; 
+
+                        if(this.x+this.radius>=canvas.width+10 || this.x<=this.radius-10){                   
+                              //   debugger;                            
+                                this.Horspeed=-this.Horspeed;                   
+                        }
+                        if(this.y+this.radius>=canvas.height+10 || this.y<=this.radius-10){
+                            this.VerSpeed=-this.VerSpeed;
+                         }        
+
+                    };
+                    totalCircle.push(circle);
+        }      
+       
+    
+        function draw(){
+            ctx.clearRect(0,0,width,height);
+            for(var j =0;j<totalCircle.length;j++){
+                var c = totalCircle[j];
+                c.draw();
+                    
+            }           
+           
+            window.requestAnimationFrame(draw);
+        }
+        
+        function getRandomColor(){
+            var hex = Math.floor(Math.random() * 16777216).toString(16); 
+            while (hex.length < 6) { 
+                hex = '0' + hex;
+            }
+            return '#' + hex; 
+        }
+        function getRandomNumber(min,max){
+            return Math.floor((Math.random()*(max-min))+min);
+        }
+        function getRandomPoint(max,radius){
+           return Math.floor(getRandomNumber(0+radius,max-radius));
+        }
+      
+        draw();
+    </script>
+</html>

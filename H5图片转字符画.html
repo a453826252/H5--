@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>图片转字母</title>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<input type="file" id="file" accept=".jpg,.png">
+<img id="img" >
+<button type="button" onclick="showImage()">展示</button>
+<script>
+    //灰度值，@表示最黑，' '表示最白
+    const graydesc = ['@', '$','q','o', 'c','l',';', '.', ' '];
+    //每行的字符数
+    const countOfCharOneLine =100;
+    //canvas 全屏。预处理
+    const canvas = document.getElementById('canvas');
+    const img=document.getElementsByTagName("img")[0];
+    const width = 800;
+    const height = 800;
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    //获取画布上图片信息
+    let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    //每个灰度块内的一行像素数
+    const pixInBlock = imageData.width / countOfCharOneLine;
+    const countOfCharOneCol = imageData.height / pixInBlock;
+
+    /**
+     * 获取图片某个灰度块的平均灰度值
+     */
+    function getImageGray(row, col) {
+        //灰度块左上角像素在canvas中的X坐标
+        let beginPixIndexX = (col - 1) * pixInBlock ;
+        //灰度块左上角像素在canvas中的Y坐标
+        let beginPixIndexY = (row - 1) * pixInBlock;
+        //总灰度值
+        let sumGray = 0;
+        //以灰度块为整体，遍历这个灰度块内的像素，求出平均灰度
+        for (; beginPixIndexY < row * pixInBlock; beginPixIndexY++) {
+            for (beginPixIndexX = (col - 1) * pixInBlock; beginPixIndexX < col * pixInBlock; beginPixIndexX++) {
+                const index = (beginPixIndexY * imageData.width + beginPixIndexX) * 4;
+                const red = imageData.data[index];
+                const green = imageData.data[index + 1];
+                const blue = imageData.data[index + 2];
+                const gray = ~~(red * 0.3 + green * 0.59 + blue * 0.11);
+                sumGray += gray;
+
+            }
+
+        }
+        //平均灰度值
+        return {gray:sumGray /Math.pow(pixInBlock,2),x:beginPixIndexX,y:beginPixIndexY};
+    }
+    
+    function draw() {
+        //清空画布
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        for(let row = 1;row<=countOfCharOneLine;row++){
+            for(let col = 1;col<=countOfCharOneCol;col++){
+                const gray = getImageGray(row,col);
+                //灰度值范围：0-255
+                const p = 255 / graydesc.length;
+                let index = -1;
+                //把灰度值范围分成 graydesc.length份，看灰度值落在哪个范围内，向上取整
+                for(let i = 1;i<=graydesc.length;i++){
+                    if(i*p>=gray.gray){
+                        index = i;
+                        break;
+                    }
+
+                }
+
+                //画字符
+                const  char = graydesc[index-1];
+                ctx.font=pixInBlock+'px Arial';
+                ctx.strokeText(char,gray.x,gray.y);
+            }
+        }
+    }
+
+    img.onload = function () {
+        //把img图像绘制到canvas中
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        //获取图像数据
+        imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        draw();
+    };
+    function showImage() {
+        let file = document.getElementById('file').files[0];
+        let url = URL.createObjectURL(file);
+        if(!file){
+            alert("请先选择文件");
+        }
+        img.src = url;
+    }
+
+
+</script>
+</body>
+</html>
