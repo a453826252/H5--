@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>播放音频</title>
+</head>
+<body>
+<input type="file" id="file" />
+<canvas id="canvas" width="400px" height="400px" style="border: 1px #ccc dashed"></canvas>
+<script>
+      var file=null;
+        var audioDecodeBuffer=null; //音频解码后的数据
+
+
+    //获取音频api
+    try{
+        var AudioContext=window.AudioContext || window.webkitAudioContext || window.mozAudioContext || window.msAudioContext;
+        var audioApi=new AudioContext();
+    }catch(e){
+        alert('你的浏览器似乎不支持audio api，使用谷歌或火狐');
+    }
+
+    //监听文件选择
+    var audioInput = document.getElementById('file');
+    audioInput.onchange = function() {
+        //这里判断一下文件长度可以确定用户是否真的选择了文件，如果点了取消则文件长度为0
+        if (audioInput.files.length !== 0) {
+           file = audioInput.files[0]; //将文件赋值到Visualizer对象的属性上
+            readMusicData();
+        }
+    };
+
+        function readMusicData(){
+            //将文件转换为arrayBuffer格式
+            var fr = new FileReader();
+            fr.readAsArrayBuffer(file);
+
+            //数据读取完成后调用
+            fr.onload=function(e){
+                audioApi.decodeAudioData(e.target.result,function(buffer){  //buffer为解码后的数据
+                    audioDecodeBuffer=buffer;
+                    saveAndPlayMusicData();
+                },function(e){
+                    alert('文件解码失败');
+                });
+            };
+        }
+
+
+        function saveAndPlayMusicData(){
+            //创建音频容器并赋值
+            var audioBufferSouceNode = audioApi.createBufferSource();
+
+
+            //创建分析器
+            var analyser = audioApi.createAnalyser();
+            //连接到分析器
+            audioBufferSouceNode.connect(analyser);
+
+            //分析器连接到播放器
+            analyser.connect(audioApi.destination);
+
+            //开始播放
+            audioBufferSouceNode.buffer = audioDecodeBuffer;
+            audioBufferSouceNode.start(0);
+
+            //绘制音波图
+            draw(analyser);
+        }
+
+        function draw(analyser){
+            var canvas = document.getElementById('canvas');
+           var ctx=canvas.getContext("2d");
+
+
+            //定义一个渐变样式用于画图
+            var gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(1, '#0f0');
+            gradient.addColorStop(0.7, '#f00');
+            gradient.addColorStop(0.5, '#ff0');
+            gradient.addColorStop(0.3, '#f00');
+            gradient.addColorStop(0, '#0f0');
+            ctx.strokeStyle=gradient;
+            var drawMeter=function(){
+                //获取音频此刻的能量值
+                var array = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(array);
+                var step=5;   //取样点
+                var gap = 6;  //间距
+                var meterNum=70;
+                ctx.clearRect(0, 0, 400, 400);
+
+//                for (var i = 1; i <meterNum ;i++ ) {
+//                    var value = array[i * step];
+//                    ctx.beginPath();
+//
+//                    ctx.moveTo(i*gap,400);
+//                    ctx.lineTo(i*gap,value);
+//                    ctx.stroke();
+//                }
+
+                for (var i = 1; i <array.length  ;i++ ) {
+                    ctx.beginPath();
+                    ctx.moveTo(i,200);
+                    ctx.lineTo(i,200-array[i]/2);
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.moveTo(i,200);
+                    ctx.lineTo(i,200+array[i]/2);
+                    ctx.stroke();
+
+                }
+                requestAnimationFrame(drawMeter);
+            };
+            requestAnimationFrame(drawMeter);
+        }
+
+
+</script>
+</body>
+</html>
